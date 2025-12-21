@@ -5,12 +5,12 @@ import numpy as np
 
 # Konfigurasi Halaman
 st.set_page_config(
-    page_title="PREDIKSI CHURN PELANGGAN TELCO",
-    page_icon="📡:V",
+    page_title="Telco Customer Churn Prediction",
+    page_icon="📡",
     layout="wide"
 )
 
-#Load Model
+# --- 1. Load Model ---
 @st.cache_resource
 def load_model():
     try:
@@ -22,14 +22,14 @@ def load_model():
 
 model = load_model()
 
-st.title("📡 PREDIKSI CHURN PELANGGAN TELCO")
+# --- 2. Judul dan Deskripsi ---
+st.title("📡 Telco Customer Churn Prediction")
 st.markdown("""
-            Aplikasi ini menggunakan Machine Learning dengan model (**Voting Classifier**) untuk memprediksi 
-            apakah pelanggan akan berhenti berlangganan (Churn) atau tidak. 
-            Silakan isi formulir di sebelah kiri (sidebar) untuk mendapatkan prediksi.
+Aplikasi ini menggunakan Machine Learning (**Voting Classifier**) untuk memprediksi apakah pelanggan akan berhenti berlangganan (Churn) atau tidak.
+Silakan isi formulir di sebelah kiri (sidebar) untuk mendapatkan prediksi.
 """)
 
-# input Fitur
+# --- 3. Sidebar Input Fitur ---
 st.sidebar.header("📝 Input Data Pelanggan")
 
 def user_input_features():
@@ -87,8 +87,11 @@ def user_input_features():
 
 input_data = user_input_features()
 
-# Fungsi preprocessing input sesuai dengan model
+# --- 4. Preprocessing Input ---
+# Fungsi untuk mengubah input user menjadi format yang dimengerti model (One-Hot Encoding Manual)
 def preprocess_input(data):
+    # Urutan kolom HARUS sama persis dengan 'model.feature_names_in_' saat training
+    # Berdasarkan inspeksi model Anda, berikut adalah kolom yang diharapkan:
     columns = [
         'tenure', 'MonthlyCharges', 'TotalCharges', 
         'gender_Male', 'SeniorCitizen_1', 'Partner_Yes', 'Dependents_Yes', 
@@ -100,13 +103,16 @@ def preprocess_input(data):
         'PaymentMethod_Credit card (automatic)', 'PaymentMethod_Electronic check', 
         'PaymentMethod_Mailed check'
     ]
-
+    
+    # Buat dataframe kosong dengan kolom yang sesuai
     df = pd.DataFrame(0, index=[0], columns=columns)
     
+    # Isi Data Numerik
     df['tenure'] = data['tenure']
     df['MonthlyCharges'] = data['MonthlyCharges']
     df['TotalCharges'] = data['TotalCharges']
     
+    # Isi Data Kategorikal (Manual Mapping agar akurat)
     if data['gender'] == 'Male': df['gender_Male'] = 1
     if data['SeniorCitizen'] == 'Yes': df['SeniorCitizen_1'] = 1
     if data['Partner'] == 'Yes': df['Partner_Yes'] = 1
@@ -116,6 +122,7 @@ def preprocess_input(data):
     
     if data['InternetService'] == 'Fiber optic': df['InternetService_Fiber optic'] = 1
     elif data['InternetService'] == 'No': df['InternetService_No'] = 1
+    # DSL tidak perlu diset karena diwakili oleh 0 di kedua kolom (baseline)
     
     if data['OnlineSecurity'] == 'Yes': df['OnlineSecurity_Yes'] = 1
     if data['OnlineBackup'] == 'Yes': df['OnlineBackup_Yes'] = 1
@@ -138,16 +145,17 @@ def preprocess_input(data):
 # Proses data input
 input_df = preprocess_input(input_data)
 
-# Tampilkan data input 
+# Tampilkan data input (opsional, untuk debugging user)
 with st.expander("Lihat Data Input (Raw)"):
     st.write(pd.DataFrame([input_data]))
 
+# --- 5. Prediksi ---
 col1, col2 = st.columns([1, 1])
 
 with col1:
     if st.button("🚀 Prediksi Churn"):
         if model is not None:
-            # prediksi
+            # Lakukan prediksi
             prediction = model.predict(input_df)[0]
             probability = model.predict_proba(input_df)[0][1]
 
